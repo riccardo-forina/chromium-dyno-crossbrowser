@@ -63,11 +63,7 @@ function Runner(outerContainerId, opt_config) {
   this.images = {};
   this.imagesLoaded = 0;
 
-  if (this.isDisabled()) {
-    this.setupDisabledRunner();
-  } else {
-    this.loadImages();
-  }
+  this.loadImages();
 }
 window['Runner'] = Runner;
 
@@ -206,7 +202,7 @@ Runner.keycodes = {
  * @enum {string}
  */
 Runner.events = {
-  ANIM_END: 'webkitAnimationEnd',
+  ANIM_END: IS_WEBKIT ? 'webkitAnimationEnd' : 'animationend',
   CLICK: 'click',
   KEYDOWN: 'keydown',
   KEYUP: 'keyup',
@@ -362,6 +358,7 @@ Runner.prototype = {
 
     this.startListening();
     this.update();
+    this.debounceResize();
 
     window.addEventListener(Runner.events.RESIZE,
         this.debounceResize.bind(this));
@@ -447,7 +444,8 @@ Runner.prototype = {
       this.containerEl.addEventListener(Runner.events.ANIM_END,
           this.startGame.bind(this));
 
-      this.containerEl.style.webkitAnimation = 'intro .4s ease-out 1 both';
+
+      this.containerEl.style[IS_WEBKIT ? 'webkitAnimation' : 'animation'] = 'intro .4s ease-out 1 both';
       this.containerEl.style.width = this.dimensions.WIDTH + 'px';
 
       if (this.touchController) {
@@ -468,7 +466,7 @@ Runner.prototype = {
     this.runningTime = 0;
     this.playingIntro = false;
     this.tRex.playingIntro = false;
-    this.containerEl.style.webkitAnimation = '';
+    this.containerEl.style[IS_WEBKIT ? 'webkitAnimation' : 'animation'] = '';
     this.playCount++;
 
     // Handle tabbing off the page. Pause the current game.
@@ -820,7 +818,12 @@ Runner.updateCanvasScaling = function(canvas, opt_width, opt_height) {
 
   // Query the various pixel ratios
   var devicePixelRatio = Math.floor(window.devicePixelRatio) || 1;
-  var backingStoreRatio = Math.floor(context.webkitBackingStorePixelRatio) || 1;
+  var backingStoreRatio = Math.floor(
+          context.webkitBackingStorePixelRatio ||
+          context.mozBackingStorePixelRatio ||
+          context.msBackingStorePixelRatio ||
+          context.oBackingStorePixelRatio ||
+          context.backingStorePixelRatio) || 1;
   var ratio = devicePixelRatio / backingStoreRatio;
 
   // Upscale the canvas if the two ratios don't match
